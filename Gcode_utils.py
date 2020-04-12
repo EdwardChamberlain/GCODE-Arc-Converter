@@ -20,9 +20,6 @@ def readGCODE(filename):
             coords.append([float(i[indexX+1:indexEndX]), float(i[indexY+1:indexEndY]), float(i[indexE+1:])])
 
     print(f"IMPORTED {len(coords)} points")
-
-    print(coords)
-
     return coords
 
 def move_type(p1, p2):
