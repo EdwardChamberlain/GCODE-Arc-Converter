@@ -3,26 +3,32 @@ import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.datasets import make_circles
 
+import Gcode_utils
+
+# IMPORT GCODE
+coords = Gcode_utils.readGCODE("Sample.gcode")
+
+# TRIM GCODE
+coords = coords[0:20]
+
+# CREATE FIGURE
 fig, ax = plt.subplots()
 ax.set_aspect(1)
-
-coords = [[1,0],[0.7,0.7],[0.866,0.5],[0.5,0.866],[0,1]]
-print(coords)
-
 plt.scatter([i[0] for i in coords], [i[1] for i in coords])
-
 
 # FIT CIRCLE 
 xc,yc,r,s = cf.hyper_fit(coords)
-print(f'{xc} : {yc} : {r} : {s}')
+print(f"CIRCLE: {xc}, {yc}, {r}, {s}")
 
 # PLOT CIRCLE
 circle1 = plt.Circle((xc, yc), r, linestyle='--', fill=False)
 ax.add_artist(circle1)
 
+# Find move type
+movetype = Gcode_utils.move_type(coords[0], coords[1])
+
 # FORMULATE G CODE COMMAND
-print(f"{xc}, {yc}, {r}, {s}")
-print(f"G2 X{coords[-1][0]} Y{coords[-1][1]} R{round(r, 5)}")
+print(f" GCODE: {movetype} X{coords[-1][0]} Y{coords[-1][1]} R{round(r, 5)}")
 
 # SHOW PLOT
 plt.show()
