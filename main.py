@@ -35,7 +35,7 @@ E_total = sum(coords[:][2])
 
 # FORMULATE G CODE COMMAND
 if s < Sthreshold:
-    print(f'GCODE:\n    "{movetype} X{coords[-1][0]} Y{coords[-1][1]} R{round(r, 5)} E{E_total}"')
+    print(f'GCODE:\n    "{movetype} X{coords[-1][0]} Y{coords[-1][1]} R{round(r, 5)} E{round(E_total, 5)}"')
 else:
     print(f"GCODE:\n    NOT AN ARC MOVE")
 
