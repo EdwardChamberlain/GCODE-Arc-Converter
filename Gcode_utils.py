@@ -15,9 +15,13 @@ def readGCODE(filename):
             indexY = i.index("Y")
             indexEndY = i[indexY:].index(" ") + indexY
 
-            coords.append([float(i[indexX+1:indexEndX]), float(i[indexY+1:indexEndY])])
+            indexE = i.index("E")
+
+            coords.append([float(i[indexX+1:indexEndX]), float(i[indexY+1:indexEndY]), float(i[indexE+1:])])
 
     print(f"IMPORTED {len(coords)} points")
+
+    print(coords)
 
     return coords
 

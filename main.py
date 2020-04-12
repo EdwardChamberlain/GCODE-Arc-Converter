@@ -28,11 +28,14 @@ circle1 = plt.Circle((xc, yc), r, linestyle='--', fill=False)
 ax.add_artist(circle1)
 
 # DETERMINE MOVE TYPE
-movetype = Gcode_utils.move_type(coords[0], coords[1])
+movetype = Gcode_utils.move_type(coords[0][:2], coords[1][:2])
+
+# SUM E TOTAL
+E_total = sum(coords[:][2])
 
 # FORMULATE G CODE COMMAND
 if s < Sthreshold:
-    print(f'"GCODE:\n    {movetype} X{coords[-1][0]} Y{coords[-1][1]} R{round(r, 5)}"')
+    print(f'GCODE:\n    "{movetype} X{coords[-1][0]} Y{coords[-1][1]} R{round(r, 5)} E{E_total}"')
 else:
     print(f"GCODE:\n    NOT AN ARC MOVE")
 
