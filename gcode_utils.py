@@ -25,7 +25,7 @@ def read_gcode_file(filename):
 
     coords = []
 
-    print(f" Importing {filename}:")
+    print(f" Parsing: {filename}:")
     with alive_bar(len(GCODE)) as bar:  # or a 1000 in the loop example.
         for i in GCODE:
             if i[:2] == "G1":
