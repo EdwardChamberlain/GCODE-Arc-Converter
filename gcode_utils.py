@@ -1,15 +1,16 @@
 import numpy as np
+from alive_progress import alive_bar
 
-DEBUG = True
+DEBUG = False
 
-def parse_gcode(input):
+def parse_gcode(input_string):
     # SET KEYS TO COLLECT 
     keys = ["G", "X", "Y", "Z", "E", "F"]
 
     # CREATE A ZEROD DICT TO STORE RESULTS
     result = {key: 0 for key in keys}
 
-    for elem in input.split():
+    for elem in input_string.split():
         for key in keys: 
             if elem.startswith(key):
                 result[key] = float(elem[1:])
@@ -24,16 +25,19 @@ def read_gcode_file(filename):
 
     coords = []
 
-    for i in GCODE:
-        if i[:2] == "G1":
-            
-            parsed_line = parse_gcode(i)
-            
-            if DEBUG: print(f"{i[:-1]} -> {parsed_line}")
- 
-            coords.append(parsed_line)
+    print(f" Importing {filename}:")
+    with alive_bar(len(GCODE)) as bar:  # or a 1000 in the loop example.
+        for i in GCODE:
+            if i[:2] == "G1":
+                
+                parsed_line = parse_gcode(i)
+                
+                if DEBUG: print(f"{i[:-1]} -> {parsed_line}")
+    
+                coords.append(parsed_line)
+            bar()
 
-    print(f"IMPORTED {len(coords)} points")
+    print(f" IMPORTED {len(coords)} points")
     return coords
 
 def move_type(p1, p2):
