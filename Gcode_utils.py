@@ -1,7 +1,26 @@
 import numpy as np
 
-def readGCODE(filename):
-    f = open('Sample.gcode', 'r')
+def parse_gcode(input):
+    keys = ["X", "Y", "Z", "E"]
+    X_VAL = 0
+    Y_VAL = 0
+    Z_VAL = 0
+    E_VAL = 0
+    for elem in input.split():
+        if elem.startswith(keys[0]):
+            X_VAL = float(elem[1:])
+        if elem.startswith(keys[1]):
+            Y_VAL = float(elem[1:])
+        if elem.startswith(keys[2]):
+            Z_VAL = float(elem[1:])
+        if elem.startswith(keys[3]):
+            E_VAL = float(elem[1:])
+
+    return [X_VAL, Y_VAL, Z_VAL, E_VAL]
+
+
+def read_gcode_file(filename):
+    f = open(filename, 'r')
     GCODE = f.readlines()
     f.close()
 
@@ -9,15 +28,13 @@ def readGCODE(filename):
 
     for i in GCODE:
         if i[:2] == "G1":
-            indexX = i.index("X")
-            indexEndX = i[indexX:].index(" ") + indexX
+            print(f"{i[:-1]}", end=' -> ')
 
-            indexY = i.index("Y")
-            indexEndY = i[indexY:].index(" ") + indexY
-
-            indexE = i.index("E")
-
-            coords.append([float(i[indexX+1:indexEndX]), float(i[indexY+1:indexEndY]), float(i[indexE+1:])])
+            parsed_line = parse_gcode(i)
+            
+            print(parsed_line)
+ 
+            coords.append(parsed_line)
 
     print(f"IMPORTED {len(coords)} points")
     return coords
