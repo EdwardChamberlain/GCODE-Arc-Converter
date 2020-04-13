@@ -2,12 +2,15 @@ import circle_fit as cf
 import matplotlib.pyplot as plt
 import numpy as np
 
-import Gcode_utils
+import gcode_utils
 
 Sthreshold = 0.002
 
 # IMPORT GCODE
-coords = Gcode_utils.readGCODE("Sample.gcode")
+imported_file = gcode_utils.read_gcode_file("Sample.gcode")
+
+# PULL X Y COORDS
+coords = [[s['X'], s['Y']] for s in imported_file] 
 
 # TRIM GCODE - all points is likely too many, so running with less meakes more sense for now!
 coords = coords[0:20] 
@@ -17,10 +20,10 @@ xc,yc,r,s = cf.hyper_fit(coords)
 print(f"CIRCLE FITTED:\n    X: {xc},\n    Y: {yc},\n    R: {r},\n    S: {s}")
 
 # DETERMINE MOVE TYPE
-movetype = Gcode_utils.move_type(coords[0][:2], coords[1][:2])
+movetype = gcode_utils.move_type(coords[0][:2], coords[1][:2])
 
 # SUM E TOTAL
-E_total = sum([i[2] for i in coords])
+E_total = sum([i['E'] for i in imported_file])
 
 # FORMULATE G CODE COMMAND
 if s < Sthreshold:
