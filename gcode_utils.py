@@ -27,6 +27,8 @@ def read_gcode_file(filename):
     GCODE = f.readlines()
     f.close()
 
+    GCODE = [line.rstrip("\n") for line in GCODE]
+
     parsed_file = []
 
     print(f" Parsing: {filename}:")
@@ -138,9 +140,9 @@ def scan_for_arcs(gcode):
     for value, grp in groupby(is_arc):
         grp = list(grp)
         stop += len(grp)
-        print(value, f'{start}:{stop}')
+        # print(value, f'{start}:{stop}')
         if value == True: results.append({'START':start, 'STOP':stop - 1 + scan_length})
         start = stop
 
-    print(results)
+    # print(results)
     return results

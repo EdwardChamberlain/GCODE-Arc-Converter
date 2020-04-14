@@ -3,3 +3,5 @@ venv/
 !!.gitkeep
 
 __pycache__
+
+Output.gcode
