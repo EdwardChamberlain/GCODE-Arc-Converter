@@ -2,10 +2,11 @@ import numpy as np
 from alive_progress import alive_bar
 import circle_fit as cf
 import matplotlib.pyplot as plt
+from itertools import groupby
 
 DEBUG = False
-PLOTTING = True
-Sthreshold = 6
+PLOTTING = False
+Sthreshold = 0.01
 
 def parse_gcode(input_string):
     # SET KEYS TO COLLECT 
@@ -26,19 +27,20 @@ def read_gcode_file(filename):
     GCODE = f.readlines()
     f.close()
 
-    coords = []
+    parsed_file = []
 
     print(f" Parsing: {filename}:")
     with alive_bar(len(GCODE)) as bar:
-        for i in GCODE:
+        for index, i in enumerate(GCODE):
             if i[:1] == "G":
                 parsed_line = parse_gcode(i)
+                parsed_line['ln'] = index
                 if DEBUG: print(f"'{i[:-1]}'' -> {parsed_line}")
-                coords.append(parsed_line)
+                parsed_file.append(parsed_line)
             bar()
 
-    print(f" IMPORTED {len(coords)} points")
-    return coords
+    print(f" IMPORTED {len(parsed_file)} points")
+    return parsed_file, GCODE
 
 def move_type(p1, p2, centre):
 
@@ -67,9 +69,11 @@ def compute_arc_move(points):
 
     # FORMULATE G CODE COMMAND
     if s < Sthreshold:
-        print(f'{round(s, 5)} : {movetype} X{coords[-1][0]} Y{coords[-1][1]} R{round(r, 5)} E{round(E_total, 5)}')
+        COMMAND = f"{movetype} X{coords[-1][0]} Y{coords[-1][1]} R{round(r, 5)} E{round(E_total, 5)}"
+        if DEBUG: print(f'{round(s, 5)} : {COMMAND}')
+        return COMMAND
     else:
-        print(f"{round(s, 5)} : GCODE: NOT AN ARC MOVE")
+        print(f"{round(s, 5)} : NOT AN ARC MOVE")
 
 
     # ------------- PLOTTING --------------
@@ -107,3 +111,36 @@ def plot_gcode(points):
 
     # SHOW PLOT
     plt.show()
+
+def check_arc(points):
+    # PULL X Y COORDS
+    coords = [[s['X'], s['Y']] for s in points] 
+
+    # FIT CIRCLE 
+    xc,yc,r,s = cf.least_squares_circle(coords)
+    if DEBUG: print(f"CIRCLE FITTED:\n    X: {xc},\n    Y: {yc},\n    R: {r},\n    S: {s}")
+
+    if s < Sthreshold:
+        return True
+    else:
+        return False
+
+def scan_for_arcs(gcode):
+    # BUILD TRUTH TABLE FOR is_arc
+    scan_length = 10
+    is_arc = [check_arc(gcode[n:scan_length + n]) for n in range((len(gcode)-scan_length))]
+
+    start = 0
+    stop = 0
+
+    results = []
+
+    for value, grp in groupby(is_arc):
+        grp = list(grp)
+        stop += len(grp)
+        print(value, f'{start}:{stop}')
+        if value == True: results.append({'START':start, 'STOP':stop - 1 + scan_length})
+        start = stop
+
+    print(results)
+    return results
