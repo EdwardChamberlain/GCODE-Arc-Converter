@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 DEBUG = False
 PLOTTING = True
-Sthreshold = 0.06
+Sthreshold = 6
 
 def parse_gcode(input_string):
     # SET KEYS TO COLLECT 
@@ -56,7 +56,7 @@ def compute_arc_move(points):
     coords = [[s['X'], s['Y']] for s in points] 
 
     # FIT CIRCLE 
-    xc,yc,r,s = cf.hyper_fit(coords)
+    xc,yc,r,s = cf.least_squares_circle(coords)
     if DEBUG: print(f"CIRCLE FITTED:\n    X: {xc},\n    Y: {yc},\n    R: {r},\n    S: {s}")
 
     # DETERMINE MOVE TYPE
@@ -79,8 +79,8 @@ def compute_arc_move(points):
         # CREATE FIGURE
         fig, ax = plt.subplots()
         ax.set_aspect(1)
-        ax.set_xlim([50,150])
-        ax.set_ylim([50,150])
+        #ax.set_xlim([50,150])
+        #ax.set_ylim([50,150])
 
         # PLOT SCATTER POINTS
         plt.scatter([i[0] for i in coords], [i[1] for i in coords])
@@ -91,3 +91,19 @@ def compute_arc_move(points):
 
         # SHOW PLOT
         plt.show()
+
+def plot_gcode(points):
+
+    coords = [[s['X'], s['Y']] for s in points] 
+
+    # CREATE FIGURE
+    fig, ax = plt.subplots()
+    ax.set_aspect(1)
+    #ax.set_xlim([-50,50])
+    #ax.set_ylim([-50,50])
+
+    # PLOT SCATTER POINTS
+    plt.scatter([i[0] for i in coords], [i[1] for i in coords])
+
+    # SHOW PLOT
+    plt.show()
