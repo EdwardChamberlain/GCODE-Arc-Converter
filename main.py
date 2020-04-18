@@ -4,7 +4,7 @@ from alive_progress import alive_bar
 
 import gcode_utils
 
-INPUT_FILE = "skin.gcode"
+INPUT_FILE = "gcode/skin.gcode"
 OUTPUT_FILE = "Output.gcode"
 
 # IMPORT GCODE
