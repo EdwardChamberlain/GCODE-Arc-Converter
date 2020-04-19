@@ -1,3 +1,10 @@
+# #####################################
+# #                                   #
+# #          GCODE Utilities          #
+# #       By Edward Chamberlain       #
+# #                                   #
+# #####################################
+
 import numpy as np
 from alive_progress import alive_bar
 import circle_fit as cf
@@ -8,12 +15,9 @@ DEBUG = False
 PLOTTING = False
 Sthreshold = 0.0001
 
-def extract_g_moves(gcode, move_type):
-    result = []
-    for i in gcode:
-        if i['G'] == move_type:
-            result.append(i)
-    return result
+def contains_letters(input_string):
+    transformed_string = input_string.lower()
+    return transformed_string.islower()
 
 def parse_gcode(input_string):
     # SET KEYS TO COLLECT 
@@ -22,44 +26,56 @@ def parse_gcode(input_string):
     # CREATE A ZEROD DICT TO STORE RESULTS
     result = {key: 0 for key in keys}
 
+    # CONVERT STRING TO DICT - REQUIRES SPACED GCODE
     for elem in input_string.split():
         for key in keys: 
             if elem.startswith(key):
-                result[key] = float(elem[1:])
+                value = elem[1:]
+                if contains_letters(value):
+                    result[key] = value
+                else:
+                    result[key] = float(value)
             
     return result
 
-def read_gcode_file(filename):
-    f = open(filename, 'r')
-    GCODE = f.readlines()
-    f.close()
+def parse_gcode_batch(input_list):
+    parsed_list = [] # init result
 
-    GCODE = [line.rstrip("\n") for line in GCODE]
-
-    parsed_file = []
-
-    print(f" Parsing: {filename}:")
-    with alive_bar(len(GCODE)) as bar:
-        for index, i in enumerate(GCODE):
+    print("Parsing GCode:")
+    with alive_bar(len(input_list)) as bar:
+        for index, i in enumerate(input_list):
             if i[:1] == "G":
                 parsed_line = parse_gcode(i)
                 parsed_line['ln'] = index
                 if DEBUG: print(f"'{i[:-1]}'' -> {parsed_line}")
-                parsed_file.append(parsed_line)
+                parsed_list.append(parsed_line)
             bar()
+    print(f"Parsed {len(parsed_list)} lines.")
 
-    print(f" IMPORTED {len(parsed_file)} points")
+    return parsed_list
+
+def read_gcode_file(filename):
+    print(f"Loading '{filename}'...", end=" ")
+    # OPEN AND READ FILE
+    f = open(filename, 'r')
+    GCODE = f.readlines()
+    f.close()
+    print(f"Done! {len(GCODE)} lines.")
+
+    # STRIP NEW LINES
+    GCODE = [line.rstrip("\n") for line in GCODE]
+
+    # CONVERT TO LIST OF DICTS
+    parsed_file = parse_gcode_batch(GCODE)
+
     return parsed_file, GCODE
 
-def move_type(p1, p2, centre):
-
-    v1 = [p1[0] - centre[0], p1[1] - centre[1]]
-    v2 = [p2[0] - centre[0], p2[1] - centre[1]]
-
-    if np.cross(v1, v2) > 0:
-        return "G3"
-    else: 
-        return "G2"
+def extract_g_moves(gcode, move_type):
+    result = []
+    for i in gcode:
+        if i['G'] == move_type:
+            result.append(i)
+    return result
 
 def compute_arc_move(points):
 
@@ -121,7 +137,7 @@ def plot_gcode(points):
     # SHOW PLOT
     plt.show()
 
-def plot_gcode2(points, start, end):
+def plot_gcode_arc(points, start, end):
 
     coords = [[s['X'], s['Y']] for s in points] 
 
@@ -145,6 +161,16 @@ def plot_gcode2(points, start, end):
     # SHOW PLOT
     plt.show()
 
+def move_type(p1, p2, centre):
+
+    v1 = [p1[0] - centre[0], p1[1] - centre[1]]
+    v2 = [p2[0] - centre[0], p2[1] - centre[1]]
+
+    if np.cross(v1, v2) > 0:
+        return "G3"
+    else: 
+        return "G2"
+
 def check_arc(points):
     # PULL X Y COORDS
     coords = [[s['X'], s['Y']] for s in points] 
@@ -166,22 +192,25 @@ def scan_for_arcs2(gcode):
 
     results = []
 
-    while SCAN:
-        # print(f"AT INDEX: {i}")
+    with alive_bar(manual=True) as bar:
+        while SCAN:
+            # print(f"AT INDEX: {i}")
 
-        if check_arc(gcode[i:i+initial_scan_length]):
-            # print("ARC FOUND")
-            expand_arc(gcode, i)
-            expanded_arc = expand_arc(gcode, i)
-            results.append(expanded_arc)
-            i = expanded_arc['STOP']
-        # else:
-        #     # print("NO ARC")
+            if check_arc(gcode[i:i+initial_scan_length]):
+                # print("ARC FOUND")
+                expand_arc(gcode, i)
+                expanded_arc = expand_arc(gcode, i)
+                results.append(expanded_arc)
+                i = expanded_arc['STOP']
+            # else:
+            #     # print("NO ARC")
 
-        if not i+initial_scan_length >= len(gcode):
-            i = i + 1
-        else:
-            SCAN = False
+            if not i+initial_scan_length >= len(gcode):
+                i = i + 1
+            else:
+                SCAN = False
+            
+            bar((i+1)/len(gcode))
     
     return results 
   
