@@ -19,12 +19,17 @@ def contains_letters(input_string):
     transformed_string = input_string.lower()
     return transformed_string.islower()
 
+def build_g_move(gcode):
+    result = " ".join(f"{k}{v}" for k, v in gcode.items() if (v != None and k != 'ln'))
+    print(result)
+    return result
+
 def parse_gcode(input_string):
     # SET KEYS TO COLLECT 
     keys = ["G", "X", "Y", "Z", "E", "F"]
 
     # CREATE A ZEROD DICT TO STORE RESULTS
-    result = {key: 0 for key in keys}
+    result = {key: None for key in keys}
 
     # CONVERT STRING TO DICT - REQUIRES SPACED GCODE
     for elem in input_string.split():
@@ -34,7 +39,10 @@ def parse_gcode(input_string):
                 if contains_letters(value):
                     result[key] = value
                 else:
-                    result[key] = float(value)
+                    if key == "G":
+                        result[key] = int(value)
+                    else:
+                        result[key] = float(value)
             
     return result
 
@@ -69,6 +77,8 @@ def read_gcode_file(filename):
     parsed_file = parse_gcode_batch(GCODE)
 
     return parsed_file, GCODE
+
+# NON CONFIRMED
 
 def extract_g_moves(gcode, move_type):
     result = []
@@ -121,18 +131,23 @@ def compute_arc_move(points):
         # SHOW PLOT
         plt.show()
 
-def plot_gcode(points):
+def print_gcode(gcode):
+    for i in gcode:
+        print(i)
+
+def plot_gcode(points, plot_title="GCode Plot"):
 
     coords = [[s['X'], s['Y']] for s in points] 
 
     # CREATE FIGURE
     fig, ax = plt.subplots()
     ax.set_aspect(1)
+    ax.set_title(plot_title)
     #ax.set_xlim([-50,50])
     #ax.set_ylim([-50,50])
 
     # PLOT SCATTER POINTS
-    plt.scatter([i[0] for i in coords], [i[1] for i in coords])
+    plt.scatter([i[0] for i in coords], [i[1] for i in coords], marker="o")
 
     # SHOW PLOT
     plt.show()
@@ -192,9 +207,10 @@ def scan_for_arcs2(gcode):
 
     results = []
 
+    print("Scanning for Arcs:")
     with alive_bar(manual=True) as bar:
         while SCAN:
-            # print(f"AT INDEX: {i}")
+            print(f"AT INDEX: {i}")
 
             if check_arc(gcode[i:i+initial_scan_length]):
                 # print("ARC FOUND")
