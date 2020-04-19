@@ -6,7 +6,14 @@ from itertools import groupby
 
 DEBUG = False
 PLOTTING = False
-Sthreshold = 0.01
+Sthreshold = 0.0001
+
+def extract_g_moves(gcode, move_type):
+    result = []
+    for i in gcode:
+        if i['G'] == move_type:
+            result.append(i)
+    return result
 
 def parse_gcode(input_string):
     # SET KEYS TO COLLECT 
@@ -114,9 +121,34 @@ def plot_gcode(points):
     # SHOW PLOT
     plt.show()
 
+def plot_gcode2(points, start, end):
+
+    coords = [[s['X'], s['Y']] for s in points] 
+
+    # CREATE FIGURE
+    fig, ax = plt.subplots()
+    ax.set_aspect(1)
+
+    # PLOT SCATTER POINTS
+    plt.scatter([i[0] for i in coords], [i[1] for i in coords])
+
+    # PULL X Y COORDS
+    coords = [[s['X'], s['Y']] for s in points[start:end]] 
+
+    # FIT CIRCLE 
+    xc,yc,r,s = cf.least_squares_circle(coords)
+
+    # PLOT CIRCLE
+    circle1 = plt.Circle((xc, yc), r, linestyle='--', fill=False)
+    ax.add_artist(circle1)
+
+    # SHOW PLOT
+    plt.show()
+
 def check_arc(points):
     # PULL X Y COORDS
     coords = [[s['X'], s['Y']] for s in points] 
+    # print(f"no.points: {len(coords)}")
 
     # FIT CIRCLE 
     xc,yc,r,s = cf.least_squares_circle(coords)
@@ -127,6 +159,32 @@ def check_arc(points):
     else:
         return False
 
+def scan_for_arcs2(gcode):
+    initial_scan_length = 5
+    i = 0
+    SCAN = True
+
+    results = []
+
+    while SCAN:
+        # print(f"AT INDEX: {i}")
+
+        if check_arc(gcode[i:i+initial_scan_length]):
+            # print("ARC FOUND")
+            expand_arc(gcode, i)
+            expanded_arc = expand_arc(gcode, i)
+            results.append(expanded_arc)
+            i = expanded_arc['STOP']
+        # else:
+        #     # print("NO ARC")
+
+        if not i+initial_scan_length >= len(gcode):
+            i = i + 1
+        else:
+            SCAN = False
+    
+    return results 
+  
 def scan_for_arcs(gcode):
     # BUILD TRUTH TABLE FOR is_arc
     scan_length = 10
@@ -140,9 +198,36 @@ def scan_for_arcs(gcode):
     for value, grp in groupby(is_arc):
         grp = list(grp)
         stop += len(grp)
-        # print(value, f'{start}:{stop}')
         if value == True: results.append({'START':start, 'STOP':stop - 1 + scan_length})
         start = stop
 
-    # print(results)
-    return results
+    # DEFINE ARCS
+    computed_arcs = []
+    for arc in results:
+        computed_arcs.append(expand_arc(gcode, arc['START']))
+
+
+    return computed_arcs
+
+def expand_arc(gcode, start_point):
+
+    scan_length = 5
+    SEARCH = True
+    arc_length = 0
+
+    while SEARCH:
+        end_index = start_point+arc_length+scan_length
+        # print(f"LEN: {len(gcode[start_point : end_index])}, START: {start_point}, END: {end_index}")
+        if not check_arc(gcode[start_point : end_index]):
+            # print("----END OF ARC")
+            SEARCH = False
+        else:
+            if not end_index >= len(gcode):
+                arc_length = arc_length + 1
+            else:
+                SEARCH = False
+        # plot_gcode(gcode[start_point:end_index])
+
+    arc_length_comp = arc_length + scan_length - 1
+
+    return {'START': start_point, 'STOP': arc_length_comp+start_point}
