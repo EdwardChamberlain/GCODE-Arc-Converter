@@ -36,13 +36,13 @@ def parse_gcode(input_string):
         for key in keys: 
             if elem.startswith(key):
                 value = elem[1:]
-                if contains_letters(value):
-                    result[key] = value
-                else:
+                try:
                     if key == "G":
                         result[key] = int(value)
                     else:
                         result[key] = float(value)
+                except ValueError:
+                    result[key] = value
             
     return result
 
@@ -77,6 +77,25 @@ def read_gcode_file(filename):
     parsed_file = parse_gcode_batch(GCODE)
 
     return parsed_file, GCODE
+
+def fit_circle(gcode):
+    # PULL X Y COORDS
+    coords = [[s['X'], s['Y']] for s in gcode] 
+
+    # FIT CIRCLE 
+    xc,yc,r,s = cf.least_squares_circle(coords)
+    if DEBUG: print(f"CIRCLE FITTED:\n    X: {xc},\n    Y: {yc},\n    R: {r},\n    S: {s}")
+
+    return xc, yc, r, s
+
+def is_arc(gcode):
+
+    xc, yc, r, s = fit_circle(gcode)
+
+    if s < Sthreshold:
+        return True
+    else:
+        return False
 
 # NON CONFIRMED
 
@@ -213,13 +232,14 @@ def scan_for_arcs2(gcode):
             print(f"AT INDEX: {i}")
 
             if check_arc(gcode[i:i+initial_scan_length]):
-                # print("ARC FOUND")
+                print("ARC FOUND")
+
                 expand_arc(gcode, i)
                 expanded_arc = expand_arc(gcode, i)
                 results.append(expanded_arc)
                 i = expanded_arc['STOP']
-            # else:
-            #     # print("NO ARC")
+            else:
+                print("NO ARC")
 
             if not i+initial_scan_length >= len(gcode):
                 i = i + 1
@@ -262,9 +282,9 @@ def expand_arc(gcode, start_point):
 
     while SEARCH:
         end_index = start_point+arc_length+scan_length
-        # print(f"LEN: {len(gcode[start_point : end_index])}, START: {start_point}, END: {end_index}")
+        print(f"LEN: {len(gcode[start_point : end_index])}, START: {start_point}, END: {end_index}")
         if not check_arc(gcode[start_point : end_index]):
-            # print("----END OF ARC")
+            print("----END OF ARC")
             SEARCH = False
         else:
             if not end_index >= len(gcode):
