@@ -16,15 +16,27 @@ PLOTTING = False
 Sthreshold = 0.0001
 
 def contains_letters(input_string):
+    """
+    Returns True if the string contains letters but false if it does not. Be careful with scientific notation floats.
+    """
+
     transformed_string = input_string.lower()
     return transformed_string.islower()
 
 def build_g_move(gcode):
+    """
+    Construts a GCode commands string from a GCode dicts.
+    """
+
     result = " ".join(f"{k}{v}" for k, v in gcode.items() if (v != None and k != 'ln'))
     print(result)
     return result
 
 def parse_gcode(input_string):
+    """
+    Takes a string and parses it into a dict representing the move. Only works for G moves and keys G, X, Y, Z, E, and F.
+    """
+
     # SET KEYS TO COLLECT 
     keys = ["G", "X", "Y", "Z", "E", "F"]
 
@@ -47,6 +59,10 @@ def parse_gcode(input_string):
     return result
 
 def parse_gcode_batch(input_list):
+    '''
+    Takes in a list of strings and parses them into GCODE.
+    '''
+
     parsed_list = [] # init result
 
     print("Parsing GCode:")
@@ -63,11 +79,17 @@ def parse_gcode_batch(input_list):
     return parsed_list
 
 def read_gcode_file(filename):
+    """
+    Opens a specified file and returns a GCode dict.
+    """
+
     print(f"Loading '{filename}'...", end=" ")
+
     # OPEN AND READ FILE
     f = open(filename, 'r')
     GCODE = f.readlines()
     f.close()
+
     print(f"Done! {len(GCODE)} lines.")
 
     # STRIP NEW LINES
@@ -79,23 +101,34 @@ def read_gcode_file(filename):
     return parsed_file, GCODE
 
 def fit_circle(gcode):
+    """
+    Takes a list of GCode commands in dict form and uses the least squares method to fit a cirlce. Returns xc, yx, r, s.
+    """
+
     # PULL X Y COORDS
     coords = [[s['X'], s['Y']] for s in gcode] 
 
     # FIT CIRCLE 
     xc,yc,r,s = cf.least_squares_circle(coords)
+
     if DEBUG: print(f"CIRCLE FITTED:\n    X: {xc},\n    Y: {yc},\n    R: {r},\n    S: {s}")
 
     return xc, yc, r, s
 
 def is_arc(gcode):
+    """
+    Takes a list of GCode commands in dict form and returns True if the list of points form a perfect arc.
+    """
 
+    # FIT CIRCLE TO POINTS
     xc, yc, r, s = fit_circle(gcode)
 
     if s < Sthreshold:
         return True
     else:
         return False
+
+
 
 # NON CONFIRMED
 
