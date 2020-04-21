@@ -18,6 +18,8 @@ Sthreshold = 0.0001
 def contains_letters(input_string):
     """
     Returns True if the string contains letters but false if it does not. Be careful with scientific notation floats.
+
+    UNUSED: LIKELY TO BE REMOVED IMMINENTLY
     """
 
     transformed_string = input_string.lower()
@@ -28,8 +30,11 @@ def build_g_move(gcode):
     Construts a GCode commands string from a GCode dicts.
     """
 
+    # JOIN DICT TERMS TOGETHER EXCLUDING 'ln'
     result = " ".join(f"{k}{v}" for k, v in gcode.items() if (v != None and k != 'ln'))
-    print(result)
+
+    if DEBUG: print(result)
+
     return result
 
 def parse_gcode(input_string):
