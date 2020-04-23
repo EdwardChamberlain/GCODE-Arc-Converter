@@ -1,9 +1,9 @@
-# #####################################
-# #                                   #
-# #          GCODE Utilities          #
-# #       By Edward Chamberlain       #
-# #                                   #
-# #####################################
+#####################################
+#                                   #
+#          GCODE Utilities          #
+#       By Edward Chamberlain       #
+#                                   #
+#####################################
 
 import numpy as np
 from alive_progress import alive_bar
@@ -11,9 +11,9 @@ import circle_fit as cf
 import matplotlib.pyplot as plt
 from itertools import groupby
 
-DEBUG = False
-PLOTTING = False
-Sthreshold = 0.0001
+DEBUG = False # ENABLES FULL DEBUG
+PLOTTING = False # ENABLES PLOTTING OF GCODE (will create a large number of graphs)
+Sthreshold = 0.0001 # THRESHOLD TO DETERMINE AN ARC
 
 def contains_letters(input_string):
     """
@@ -39,7 +39,9 @@ def build_g_move(gcode):
 
 def parse_gcode(input_string):
     """
-    Takes a string and parses it into a dict representing the move. Only works for G moves and keys G, X, Y, Z, E, and F.
+    Takes a string and parses it into a dict representing the move. 
+    
+    Only works for G moves and keys G, X, Y, Z, E, and F. GCode keys must be split by a space.
     """
 
     # SET KEYS TO COLLECT 
@@ -68,9 +70,12 @@ def parse_gcode_batch(input_list):
     Takes in a list of strings and parses them into GCODE.
     '''
 
-    parsed_list = [] # init result
+    # INITILISE LIST
+    parsed_list = []
 
     print("Parsing GCode:")
+
+    # PARSE EACH LINE OF CODE
     with alive_bar(len(input_list)) as bar:
         for index, i in enumerate(input_list):
             if i[:1] == "G":
@@ -133,16 +138,193 @@ def is_arc(gcode):
     else:
         return False
 
-
-
-# NON CONFIRMED
-
 def extract_g_moves(gcode, move_type):
+    '''
+    Strips out all gcode moves of a certain type. e.g. G1 / G2 / G3.
+    '''
+
     result = []
+
     for i in gcode:
         if i['G'] == move_type:
             result.append(i)
+
+    if DEBUG: print(f"Extracted {len(result)} lines of G{move_type} moves")
+
     return result
+
+def find_arc_indexs(gcode):
+    '''
+    Finds all arcs in a list of GCode moves.
+    '''
+
+    # SET SCAN PARAMETERS
+    initial_scan_length = 5
+    i = 0
+    SCAN = True
+
+    # INIT RESULT
+    results = []
+
+    print("Scanning for Arcs:")
+
+    # SCAN FOR ARCS
+    with alive_bar(manual=True) as bar:
+        while SCAN:
+
+            if DEBUG: print(f"AT INDEX: {i}")
+
+            if check_arc(gcode[i:i+initial_scan_length]):
+                
+                if DEBUG: print("ARC FOUND")
+
+                # EXPAND THE ARC
+                expanded_arc = expand_arc(gcode, i)
+
+                if DEBUG: print(f"Expanded Arc: {expanded_arc}")
+
+                # MOVE TO ARC END
+                i = expanded_arc['STOP']
+
+                # ADD ARC TO RESULTS
+                results.append(expanded_arc)
+
+            else:
+                if DEBUG: print("NO ARC")
+
+            # INCREMENT i
+            i = i + 1
+
+            # DETERMINE WHETHER TO CONTINUE
+            if i+initial_scan_length >= len(gcode):
+
+                # END SCANNING
+                SCAN = False
+            
+            # SET PROGRESS BAR
+            bar((i)/(len(gcode)-2))
+    
+    return results 
+
+def expand_arc(gcode, start_point):
+    '''
+    Takes in GCode and a starting index and calcualtes how long the arc is from that point.
+    '''
+
+    # SET INITIAL PARAMETERS
+    scan_length = 5
+    SEARCH = True
+    arc_length = 0
+
+    while SEARCH:
+        # CALCUALTE ARC END POINT
+        end_index = start_point+arc_length+scan_length
+
+        if DEBUG: print(f"ARC TO TEST: START: {start_point}, END: {end_index}, LEN: {len(gcode[start_point : end_index])}")
+
+        # CHECK IF RANGE IS NO LONGER AN ARC
+        if not check_arc(gcode[start_point : end_index]):
+
+            if DEBUG: print("---- END OF ARC ----")
+
+            # END SEARCH
+            SEARCH = False
+
+        else:
+
+            if not end_index >= len(gcode):
+
+                # INCREMENT ARC LENGTH AND CHECK AGAIN
+                arc_length = arc_length + 1
+
+            else:
+
+                # END SEARCH
+                SEARCH = False
+
+        # plot_gcode(gcode[start_point:end_index])
+
+    # COMPENSATE ARC LENGTH DUE TO OVERSHOOT
+    arc_length_comp = arc_length + scan_length - 2
+
+    return {'START': start_point, 'STOP': arc_length_comp+start_point}
+
+def plot_gcode_arc(points, start, end, plot_title="Gcode Plot"):
+    '''
+    Plots a GCode file and the arc found between start and end.
+    '''
+
+    # EXTRACT COORDS
+    coords = [[s['X'], s['Y']] for s in points] 
+
+    # CREATE FIGURE
+    fig, ax = plt.subplots()
+    ax.set_aspect(1)
+    ax.set_title(plot_title)
+
+    # PLOT SCATTER POINTS
+    plt.scatter([i[0] for i in coords], [i[1] for i in coords])
+
+    # FIT CIRCLE 
+    xc,yc,r,s = fit_circle(points[start:end+1])
+
+    # PLOT CIRCLE
+    circle1 = plt.Circle((xc, yc), r, linestyle='--', fill=False)
+    ax.add_artist(circle1)
+
+    # SHOW PLOT
+    plt.show()
+
+def build_arc_move(points):
+    '''
+    Produces a G2 / G3 arc command for an input of GCode.
+    '''
+
+    # PULL X Y COORDS
+    coords = [[s['X'], s['Y']] for s in points] 
+
+    # FIT CIRCLE 
+    xc,yc,r,s = cf.least_squares_circle(coords)
+    if DEBUG: print(f"CIRCLE FITTED:\n    X: {xc},\n    Y: {yc},\n    R: {r},\n    S: {s}")
+
+    # DETERMINE MOVE TYPE
+    movetype = move_type(coords[0][:2], coords[1][:2], (xc, yc))
+
+    # SUM E TOTAL
+    E_total = sum([i['E'] for i in points])
+
+    # FORMULATE G CODE COMMAND
+    if s < Sthreshold:
+        COMMAND = f"{movetype} X{coords[-1][0]} Y{coords[-1][1]} R{round(r, 5)} E{round(E_total, 5)}"
+        if DEBUG: print(f'{round(s, 5)} : {COMMAND}')
+        return COMMAND
+    else:
+        print(f"{round(s, 5)} : NOT AN ARC MOVE")
+
+
+    # ------------- PLOTTING --------------
+    # ASK TO PLOT
+    if PLOTTING:
+        # CREATE FIGURE
+        fig, ax = plt.subplots()
+        ax.set_aspect(1)
+        #ax.set_xlim([50,150])
+        #ax.set_ylim([50,150])
+
+        # PLOT SCATTER POINTS
+        plt.scatter([i[0] for i in coords], [i[1] for i in coords])
+
+        # PLOT CIRCLE
+        circle1 = plt.Circle((xc, yc), r, linestyle='--', fill=False)
+        ax.add_artist(circle1)
+
+        # SHOW PLOT
+        plt.show()
+
+
+# --------------------- NON CONFIRMED ---------------------
+
+
 
 def compute_arc_move(points):
 
@@ -170,7 +352,6 @@ def compute_arc_move(points):
 
     # ------------- PLOTTING --------------
     # ASK TO PLOT
-    #if input("PLOT FIGURE? (y/n): ") == "y":
     if PLOTTING:
         # CREATE FIGURE
         fig, ax = plt.subplots()
@@ -205,30 +386,6 @@ def plot_gcode(points, plot_title="GCode Plot"):
 
     # PLOT SCATTER POINTS
     plt.scatter([i[0] for i in coords], [i[1] for i in coords], marker="o")
-
-    # SHOW PLOT
-    plt.show()
-
-def plot_gcode_arc(points, start, end):
-
-    coords = [[s['X'], s['Y']] for s in points] 
-
-    # CREATE FIGURE
-    fig, ax = plt.subplots()
-    ax.set_aspect(1)
-
-    # PLOT SCATTER POINTS
-    plt.scatter([i[0] for i in coords], [i[1] for i in coords])
-
-    # PULL X Y COORDS
-    coords = [[s['X'], s['Y']] for s in points[start:end]] 
-
-    # FIT CIRCLE 
-    xc,yc,r,s = cf.least_squares_circle(coords)
-
-    # PLOT CIRCLE
-    circle1 = plt.Circle((xc, yc), r, linestyle='--', fill=False)
-    ax.add_artist(circle1)
 
     # SHOW PLOT
     plt.show()
@@ -311,26 +468,3 @@ def scan_for_arcs(gcode):
 
 
     return computed_arcs
-
-def expand_arc(gcode, start_point):
-
-    scan_length = 5
-    SEARCH = True
-    arc_length = 0
-
-    while SEARCH:
-        end_index = start_point+arc_length+scan_length
-        print(f"LEN: {len(gcode[start_point : end_index])}, START: {start_point}, END: {end_index}")
-        if not check_arc(gcode[start_point : end_index]):
-            print("----END OF ARC")
-            SEARCH = False
-        else:
-            if not end_index >= len(gcode):
-                arc_length = arc_length + 1
-            else:
-                SEARCH = False
-        # plot_gcode(gcode[start_point:end_index])
-
-    arc_length_comp = arc_length + scan_length - 1
-
-    return {'START': start_point, 'STOP': arc_length_comp+start_point}
