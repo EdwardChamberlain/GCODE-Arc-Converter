@@ -2,56 +2,57 @@ import circle_fit as cf
 import numpy as np
 from alive_progress import alive_bar
 
-import gcode_utils
-
-PLOT = False
+import gcode_utils as gcu
 
 INPUT_FILE = "gcode/skin.gcode"
 OUTPUT_FILE = "Output.gcode"
+PLOTTING = False
 
 # IMPORT GCODE
-parsed_file, gcode_file = gcode_utils.read_gcode_file(INPUT_FILE)
+parsed_file, gcode_file = gcu.read_gcode_file(INPUT_FILE)
 
-# STRIP G1 MOVES
-trimmed_data = gcode_utils.extract_g_moves(parsed_file, 1)
+# PLOT GCODE
+if PLOTTING: gcu.plot_gcode(parsed_file, plot_title="Imported Gcode")
 
-# PLOT IMPORTED AND TRIMMED GCODE
-print("PLOTTING GCODE FILE")
-if PLOT: gcode_utils.plot_gcode(parsed_file)
-if PLOT: gcode_utils.plot_gcode(trimmed_data)
+# GET G1 MOVES
+trimmed_data = gcu.extract_g_moves(parsed_file, 1)
 
-# GET ARC LOCATIONS
-print("SCANNING FOR ARCS:")
-found_arcs = gcode_utils.scan_for_arcs2(trimmed_data)
+# EXTRACT ARCS
+arcs_indexs = gcu.find_arc_indexs(trimmed_data)
 
-print(found_arcs)
+# PLOT THE FOUND ARCS
+if PLOTTING: 
+    for i in arcs_indexs:
+        gcu.plot_gcode_arc(trimmed_data, i['START'], i['STOP'], plot_title="Arc Found!")
 
-if PLOT:
-    for r in found_arcs:
-        gcode_utils.plot_gcode(trimmed_data[r['START']:r['STOP']])
-        gcode_utils.plot_gcode2(trimmed_data, r['START'], r['STOP'])
+# CREATE PROGRESS BAR
+print("Implementing Arcs:")
+with alive_bar(len(arcs_indexs)) as bar:
 
-print(f"{len(found_arcs)} Arcs found!")
+    # CREATE THE GCODE COMMAND FOR THE ARC
+    for arc in arcs_indexs:
+        Arc_command = gcu.build_arc_move(trimmed_data[arc['START'] : arc['STOP']+1])
 
-# GENERATE ARCS FOR FOUND ARCS
-for arc in found_arcs:
-    # GET ARC
-    COMMAND = gcode_utils.compute_arc_move(trimmed_data[arc['START']:arc['STOP']])
+        # GET LINE NUMBER
+        start_ln = gcu.get_line_number(trimmed_data[arc['START']])
+        end_ln = gcu.get_line_number(trimmed_data[arc['STOP']])
 
-    # GET LN NUMBER
-    LINE = {'START':trimmed_data[arc['START']]['ln'], 'STOP':trimmed_data[arc['STOP']]['ln']}
+        # REPLACE LINES start+1 TO END
+        for line in range(arc['START'] + 1, arc['STOP']):
+            gcode_file[line] = "# CONVERTED TO ARC"
 
-    # Reposition FILE INFO
-    for position in range(LINE['START'], LINE['STOP']):
-        gcode_file[position] = "# CONVERTED TO ARC"
-    gcode_file[LINE['START']] = COMMAND
+        # ADD IN ARC
+        gcode_file[arc['START']+1] = Arc_command
 
-# STRIP CONVERTED LINES
+        bar()
+
+# TIDY UP
 output_list = []
 for line in gcode_file:
     if line != "# CONVERTED TO ARC":
         output_list.append(line)
 
+# OUTPUT FILE
 with open(OUTPUT_FILE, 'w') as f:
     for item in output_list:
         f.write("%s\n" % item)

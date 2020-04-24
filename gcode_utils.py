@@ -14,6 +14,7 @@ from itertools import groupby
 DEBUG = False # ENABLES FULL DEBUG
 PLOTTING = False # ENABLES PLOTTING OF GCODE (will create a large number of graphs)
 Sthreshold = 0.0001 # THRESHOLD TO DETERMINE AN ARC
+round_length = 6
 
 def contains_letters(input_string):
     """
@@ -147,7 +148,8 @@ def extract_g_moves(gcode, move_type):
 
     for i in gcode:
         if i['G'] == move_type:
-            result.append(i)
+            if i['X'] is not None and i['Y'] is not None:
+                result.append(i)
 
     if DEBUG: print(f"Extracted {len(result)} lines of G{move_type} moves")
 
@@ -202,8 +204,10 @@ def find_arc_indexs(gcode):
                 SCAN = False
             
             # SET PROGRESS BAR
-            bar((i)/(len(gcode)-2))
+            bar((i - 1) / (len(gcode)-2))
     
+    print(f"Found {len(results)} Arcs:")
+
     return results 
 
 def expand_arc(gcode, start_point):
@@ -275,56 +279,70 @@ def plot_gcode_arc(points, start, end, plot_title="Gcode Plot"):
     # SHOW PLOT
     plt.show()
 
-def build_arc_move(points):
+def build_arc_move(gcode):
     '''
     Produces a G2 / G3 arc command for an input of GCode.
     '''
 
-    # PULL X Y COORDS
-    coords = [[s['X'], s['Y']] for s in points] 
-
     # FIT CIRCLE 
-    xc,yc,r,s = cf.least_squares_circle(coords)
+    xc,yc,r,s = fit_circle(gcode)
+
     if DEBUG: print(f"CIRCLE FITTED:\n    X: {xc},\n    Y: {yc},\n    R: {r},\n    S: {s}")
 
     # DETERMINE MOVE TYPE
-    movetype = move_type(coords[0][:2], coords[1][:2], (xc, yc))
+    movetype = move_type(gcode, (xc, yc))
 
     # SUM E TOTAL
-    E_total = sum([i['E'] for i in points])
+    E_total = sum(i['E'] for i in gcode[1:] if i['E'] is not None)
 
     # FORMULATE G CODE COMMAND
     if s < Sthreshold:
-        COMMAND = f"{movetype} X{coords[-1][0]} Y{coords[-1][1]} R{round(r, 5)} E{round(E_total, 5)}"
-        if DEBUG: print(f'{round(s, 5)} : {COMMAND}')
+        COMMAND = f"{movetype} X{round(gcode[-1]['X'], round_length)} Y{round(gcode[-1]['Y'], round_length)} R{round(r, round_length)} E{round(E_total, round_length)}"
+        
+        if gcode[1]['F'] is not None:
+            COMMAND = COMMAND + (f" F{gcode[1]['F']}")
+
+        if DEBUG: print(f'{round(s, round_length)} : {COMMAND}')
         return COMMAND
     else:
-        print(f"{round(s, 5)} : NOT AN ARC MOVE")
+        print(f"{round(s, 5)} > {Sthreshold} : NOT AN ARC MOVE")
 
+def move_type(gcode, centre):
+    '''
+    Receives an arc of G1 moves and returns whether it is clockwise or anti-clockwise in the format G2 / G3.
+    '''
 
-    # ------------- PLOTTING --------------
-    # ASK TO PLOT
-    if PLOTTING:
-        # CREATE FIGURE
-        fig, ax = plt.subplots()
-        ax.set_aspect(1)
-        #ax.set_xlim([50,150])
-        #ax.set_ylim([50,150])
+    # PULL X Y COORDS
+    coords = [[s['X'], s['Y']] for s in gcode] 
 
-        # PLOT SCATTER POINTS
-        plt.scatter([i[0] for i in coords], [i[1] for i in coords])
+    # DEFINE TWO POINTS
+    p1 = (coords[0][0], coords[0][1])
+    p2 = (coords[1][0], coords[1][1])
 
-        # PLOT CIRCLE
-        circle1 = plt.Circle((xc, yc), r, linestyle='--', fill=False)
-        ax.add_artist(circle1)
+    # CALCUALTE VECTORs FROM CENTER OF CIRCLE TO POINTS
+    v1 = [p1[0] - centre[0], p1[1] - centre[1]]
+    v2 = [p2[0] - centre[0], p2[1] - centre[1]]
 
-        # SHOW PLOT
-        plt.show()
+    # CROSS PRODUCT TO DETERMINE ANGLE
+    if np.cross(v1, v2) > 0:
+        return "G3"
+    else: 
+        return "G2"
 
+def get_line_number(gcode):
+    '''
+    Takes a single GCode command and returns the line number of the file
+    '''
+
+    return gcode['ln']
 
 # --------------------- NON CONFIRMED ---------------------
 
+def replace_move(command, raw_file, arc):
+    print("NOT IMPLENTED")
 
+def replace_gcode_with_arcs():
+    print("NOT IMPLEMENTED")
 
 def compute_arc_move(points):
 
@@ -389,16 +407,6 @@ def plot_gcode(points, plot_title="GCode Plot"):
 
     # SHOW PLOT
     plt.show()
-
-def move_type(p1, p2, centre):
-
-    v1 = [p1[0] - centre[0], p1[1] - centre[1]]
-    v2 = [p2[0] - centre[0], p2[1] - centre[1]]
-
-    if np.cross(v1, v2) > 0:
-        return "G3"
-    else: 
-        return "G2"
 
 def check_arc(points):
     # PULL X Y COORDS
