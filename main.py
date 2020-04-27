@@ -7,14 +7,17 @@ import os
 
 import gcode_utils as gcu
 
-OUTPUT_FILE = "Output.gcode"
 PLOTTING = False
 
 # TAKE INPUT
 INPUT_FILE = input("File to process (path relative to install): ")
+
+# CHECK INPUT EXISTS
 if not os.path.isfile(INPUT_FILE):
-    input("ERROR: FILE NOT FOUND. PRESS ANY KEY TO EXIT")
+    input("ERROR: FILE NOT FOUND. PRESS RETURN KEY TO EXIT")
     exit()
+
+OUTPUT_FILE = f"output.gcode"
 
 # IMPORT GCODE
 parsed_file, gcode_file = gcu.read_gcode_file(INPUT_FILE)
@@ -33,12 +36,8 @@ if PLOTTING:
     for i in arcs_indexs:
         gcu.plot_gcode_arc(trimmed_data, i['START'], i['STOP'], plot_title="Arc Found!")
 
-with open("test1.gcode", 'w') as f:
-    for item in gcode_file:
-        f.write("%s\n" % item)
-
 # CREATE PROGRESS BAR
-print("Implementing Arcs:")
+print("\nImplementing Arcs:")
 with alive_bar(len(arcs_indexs)) as bar:
 
     # CREATE THE GCODE COMMAND FOR THE ARC
@@ -58,10 +57,6 @@ with alive_bar(len(arcs_indexs)) as bar:
 
         bar()
 
-with open("test2.gcode", 'w') as f:
-    for item in gcode_file:
-        f.write("%s\n" % item)
-
 # TIDY UP
 output_list = []
 for line in gcode_file:
@@ -73,4 +68,4 @@ with open(OUTPUT_FILE, 'w') as f:
     for item in output_list:
         f.write("%s\n" % item)
 
-print(f"Complete! Output created: {OUTPUT_FILE}")
+input(f"Implemented {len(arcs_indexs)} arcs!\n\nOUTPUT FILE CREATED: '{OUTPUT_FILE}'.\n\nPRESS RETURN KEY TO EXIT")
