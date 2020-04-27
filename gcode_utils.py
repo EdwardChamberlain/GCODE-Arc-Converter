@@ -46,7 +46,7 @@ def parse_gcode(input_string):
     """
 
     # SET KEYS TO COLLECT 
-    keys = ["G", "X", "Y", "Z", "E", "F"]
+    keys = ["G", "X", "Y", "Z", "R", "E", "F"]
 
     # CREATE A ZEROD DICT TO STORE RESULTS
     result = {key: None for key in keys}
@@ -202,9 +202,10 @@ def find_arc_indexs(gcode):
 
                 # END SCANNING
                 SCAN = False
+                i = len(gcode)
             
             # SET PROGRESS BAR
-            bar((i - 1) / (len(gcode)-2))
+            bar(i / len(gcode))
     
     print(f"Found {len(results)} Arcs:")
 
@@ -295,9 +296,13 @@ def build_arc_move(gcode):
     # SUM E TOTAL
     E_total = sum(i['E'] for i in gcode[1:] if i['E'] is not None)
 
+    # FIND CENTERPOINT
+    x_center = xc - gcode[0]['Y']
+    y_center = yc - gcode[0]['X']
+
     # FORMULATE G CODE COMMAND
     if s < Sthreshold:
-        COMMAND = f"{movetype} X{round(gcode[-1]['X'], round_length)} Y{round(gcode[-1]['Y'], round_length)} R{round(r, round_length)} E{round(E_total, round_length)}"
+        COMMAND = f"{movetype} X{round(gcode[-1]['X'], round_length)} Y{round(gcode[-1]['Y'], round_length)} I{round(x_center, round_length)} J{round(y_center, round_length)} E{round(E_total, round_length)}"
         
         if gcode[1]['F'] is not None:
             COMMAND = COMMAND + (f" F{gcode[1]['F']}")
