@@ -1,7 +1,12 @@
-# ignore venv 
+# ignore venv except .gitkeep
 venv/
 !!.gitkeep
 
+# ignore pycache
 __pycache__
 
+# ignore script output
 Output.gcode
+
+# ignore build
+build
