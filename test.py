@@ -77,6 +77,17 @@ cases = [
             'E': None,
             'Z': 5
         }
+    },
+    {
+        'case': "G1 X9.18485099360515e-16 Y15.0 E0",
+        'result': {
+            'G': 1,
+            'F': None,
+            'X': 9.18485099360515e-16,
+            'Y': 15.0,
+            'E': 0,
+            'Z': None
+        }
     }
 ]
 for s in cases:
@@ -85,7 +96,7 @@ for s in cases:
         print("PASS")
     else:
         print("!!! FAIL !!!")
-        print(gcode_utils.parse_gcode(s['case']))
+        print("   --> ", gcode_utils.parse_gcode(s['case']))
 
 
 print("\nTEST: build_g_move()")
@@ -101,3 +112,57 @@ for s in cases:
         print("PASS")
     else:
         print("FAIL")
+
+print("\nTEST: fit_circle()")
+cases = [
+    {
+        'case': [{'G': 1, 'X': 5, 'Y': 0, 'Z': None, 'E': 0.01284, 'F': None, 'ln': 59}, {'G': 1, 'X': 0, 'Y': 5, 'Z': None, 'E': 0.01284, 'F': None, 'ln': 59}, {'G': 1, 'X': -5, 'Y': 0, 'Z': None, 'E': 0.01284, 'F': None, 'ln': 59}, {'G': 1, 'X': 0, 'Y': -5, 'Z': None, 'E': 0.01284, 'F': None, 'ln': 59}],
+        'result': (0, 0, 5, 0)
+    }
+]
+for s in cases:
+    print(s, end=" : ")
+    if gcode_utils.fit_circle(s['case']) == s['result']:
+        print("PASS")
+    else:
+        print("FAIL", end=" : ")
+        print(gcode_utils.fit_circle(s['case']))
+
+
+print("\nTEST: is_arc()")
+cases = [
+    {
+        'case': [{'G': 1, 'X': 5, 'Y': 0, 'Z': None, 'E': 0.01284, 'F': None, 'ln': 59}, {'G': 1, 'X': 0, 'Y': 5, 'Z': None, 'E': 0.01284, 'F': None, 'ln': 59}, {'G': 1, 'X': -5, 'Y': 0, 'Z': None, 'E': 0.01284, 'F': None, 'ln': 59}, {'G': 1, 'X': 0, 'Y': -5, 'Z': None, 'E': 0.01284, 'F': None, 'ln': 59}],
+        'result': True
+    },
+    {
+        'case': [{'G': 1, 'X': 4.5, 'Y': 0, 'Z': None, 'E': 0.01284, 'F': None, 'ln': 59}, {'G': 1, 'X': 0, 'Y': 5, 'Z': None, 'E': 0.01284, 'F': None, 'ln': 59}, {'G': 1, 'X': -5, 'Y': 0, 'Z': None, 'E': 0.01284, 'F': None, 'ln': 59}, {'G': 1, 'X': 0, 'Y': -5, 'Z': None, 'E': 0.01284, 'F': None, 'ln': 59}],
+        'result': False
+    }
+]
+for s in cases:
+    print(s, end=" : ")
+    if gcode_utils.is_arc(s['case']) == s['result']:
+        print("PASS")
+    else:
+        print("FAIL", end=" : ")
+        print(gcode_utils.fit_circle(s['case']))
+
+print("\nTEST: move_type()")
+cases = [
+    {
+        'case': [{'G': 1, 'X': 15, 'Y': 0, 'Z': None, 'E': 0.01284, 'F': None, 'ln': 59}, {'G': 1, 'X': 15, 'Y': 0.5, 'Z': None, 'E': 0.01284, 'F': None, 'ln': 59}, {'G': 1, 'X': 15, 'Y': 1, 'Z': None, 'E': 0.01284, 'F': None, 'ln': 59}, {'G': 1, 'X': 15, 'Y': 1.5, 'Z': None, 'E': 0.01284, 'F': None, 'ln': 59},{'G': 1, 'X': 15, 'Y': 2, 'Z': None, 'E': 0.01284, 'F': None, 'ln': 59}],
+        'result': "G3"
+    },
+    {
+        'case': [{'G': 1, 'X': 15, 'Y': 0, 'Z': None, 'E': 0.01284, 'F': None, 'ln': 59}, {'G': 1, 'X': 15, 'Y': -0.5, 'Z': None, 'E': 0.01284, 'F': None, 'ln': 59}, {'G': 1, 'X': 15, 'Y': -1, 'Z': None, 'E': 0.01284, 'F': None, 'ln': 59}, {'G': 1, 'X': 15, 'Y': -1.5, 'Z': None, 'E': 0.01284, 'F': None, 'ln': 59},{'G': 1, 'X': 15, 'Y': -2, 'Z': None, 'E': 0.01284, 'F': None, 'ln': 59}],
+        'result': "G2"
+    }
+]
+for s in cases:
+    print(s, end=" : ")
+    if gcode_utils.move_type(s['case'], (0,0)) == s['result']:
+        print("PASS")
+    else:
+        print("FAIL", end=" : ")
+        print(gcode_utils.move_type(s['case']))
