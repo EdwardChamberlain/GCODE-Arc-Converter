@@ -1,12 +1,20 @@
+print("Starting GCode Arc Converter...")
+
 import circle_fit as cf
 import numpy as np
 from alive_progress import alive_bar
+import os
 
 import gcode_utils as gcu
 
-INPUT_FILE = "gcode/SampleModel.gcode"
 OUTPUT_FILE = "Output.gcode"
 PLOTTING = False
+
+# TAKE INPUT
+INPUT_FILE = input("File to process (path relative to install): ")
+if not os.path.isfile(INPUT_FILE):
+    input("ERROR: FILE NOT FOUND. PRESS ANY KEY TO EXIT")
+    exit()
 
 # IMPORT GCODE
 parsed_file, gcode_file = gcu.read_gcode_file(INPUT_FILE)
