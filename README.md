@@ -20,7 +20,7 @@ source /venv/GCODE-venv/bin/activate
 pip3 install -r requirements.txt
 ``` 
 
-* Adjust the `OUTPUT_FILE` in `the main.py` script.
+* Adjust the `INPUT_FILE` in `the main.py` script.
 
 * Run the script:
 ```
