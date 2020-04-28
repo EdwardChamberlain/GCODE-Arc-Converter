@@ -17,7 +17,7 @@ if not os.path.isfile(INPUT_FILE):
     input("ERROR: FILE NOT FOUND. PRESS RETURN KEY TO EXIT")
     exit()
 
-OUTPUT_FILE = f"output.gcode"
+OUTPUT_FILE = f"{INPUT_FILE.split('.')[0]}_output.gcode"
 
 # IMPORT GCODE
 parsed_file, gcode_file = gcu.read_gcode_file(INPUT_FILE)
