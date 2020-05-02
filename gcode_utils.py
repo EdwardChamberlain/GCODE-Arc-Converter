@@ -74,7 +74,7 @@ def parse_gcode_batch(input_list):
     # INITILISE LIST
     parsed_list = []
 
-    print("Parsing GCode:")
+    print("\nParsing GCode:")
 
     # PARSE EACH LINE OF CODE
     with alive_bar(len(input_list)) as bar:
@@ -168,7 +168,7 @@ def find_arc_indexs(gcode):
     # INIT RESULT
     results = []
 
-    print("Scanning for Arcs:")
+    print("\nScanning for Arcs:")
 
     # SCAN FOR ARCS
     with alive_bar(manual=True) as bar:
