@@ -4,7 +4,7 @@ block_cipher = None
 
 
 a = Analysis(['main.py'],
-             pathex=['/home/pi/Documents/GCODE-Arc-Converter'],
+             pathex=['/Users/Edward/Documents/GitHub/GCODE-Arc-Converter'],
              binaries=[],
              datas=[],
              hiddenimports=[],
