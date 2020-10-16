@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 from itertools import groupby
 
 DEBUG = False # ENABLES FULL DEBUG
-PLOTTING = False # ENABLES PLOTTING OF GCODE (will create a large number of graphs)
+PLOTTING = True # ENABLES PLOTTING OF GCODE (will create a large number of graphs)
 Sthreshold = 0.0001 # THRESHOLD TO DETERMINE AN ARC
 round_length = 6
 

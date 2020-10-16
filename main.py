@@ -7,7 +7,7 @@ import os
 
 import gcode_utils as gcu
 
-PLOTTING = False
+PLOTTING = True
 
 # TAKE INPUT
 INPUT_FILE = input("File to process (path relative to install): ")
