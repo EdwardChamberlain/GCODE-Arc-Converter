@@ -1,5 +1,5 @@
 # ignore user gcode files
-.gcode
+*.gcode
 
 # ignore build
 build
