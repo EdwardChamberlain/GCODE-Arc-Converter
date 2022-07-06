@@ -1,10 +1,3 @@
-#####################################
-#                                   #
-#          GCODE Utilities          #
-#       By Edward Chamberlain       #
-#                                   #
-#####################################
-
 import numpy as np
 from alive_progress import alive_bar
 import circle_fit as cf
